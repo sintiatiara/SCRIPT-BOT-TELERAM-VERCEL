@@ -19,9 +19,10 @@ git clone https://github.com/DanxyOfficial/SCRIPT-BOT-TELERAM-VERCEL
 - TikTok: @qwelq.38
 - Youtube: @DanxyOfficial
 - Telegram: @DanxyStore
+
 **SALURAN WHATSAPP DANXY OFFICIAL:**
 ```
-https://whatsapp.com/channel/0029VaznZlq7z4kW00unHZ0e/2158
+https://whatsapp.com/channel/0029VaznZlq7z4kW00unHZ0e
 ```
 
 **JIKA KALIAN MENYUKAI SCRIPT INI MOHON BANTUANYA KLIK START ATAU BINTANG NYA SEBAGI TANDA DUKUNGAN PROJECK SAYA, TERIMAKASIH BUAT KALIAN YANG UDAH MEMAKAI DAN SUPORT SAYA DANXY OFFICIAL**
