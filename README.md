@@ -24,7 +24,7 @@ Ikuti langkah-langkah di bawah ini untuk memulai:
 
 1.  **Clone Repository** Buka Termux atau terminal kalian, lalu jalankan:
     ```bash
-    git clone [https://github.com/DanxyOfficial/SCRIPT-BOT-TELERAM-VERCEL](https://github.com/DanxyOfficial/SCRIPT-BOT-TELERAM-VERCEL)
+    git clone https://github.com/DanxyOfficial/SCRIPT-BOT-TELERAM-VERCEL
     ```
 
 2.  **Upload ke GitHub** Push folder hasil clone tadi ke akun GitHub pribadi kalian.
