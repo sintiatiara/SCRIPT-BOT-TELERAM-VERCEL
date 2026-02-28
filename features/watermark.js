@@ -1,7 +1,5 @@
 const sharp = require("sharp");
 const axios = require("axios");
-const watermark = require('./watermark');
-watermark.register(bot);
 
 const userPosition = {};
 const userMode = {};
