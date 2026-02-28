@@ -118,10 +118,30 @@ module.exports = {
 
       // MODE SIMPAN WATERMARK
       if (waitingWatermark.has(uid)) {
-        userWatermark[uid] = inputBuffer;
-        waitingWatermark.delete(uid);
-        return bot.sendMessage(chatId, "Watermark disimpan ✅");
+  userWatermark[uid] = inputBuffer;
+  waitingWatermark.delete(uid);
+
+  return bot.sendMessage(
+    chatId,
+    "✅ Watermark berhasil disimpan!\n\n" +
+    "Sekarang pilih pengaturan:\n" +
+    "📍 Posisi\n" +
+    "🧩 Mode (Single / Grid)\n" +
+    "🔳 Opacity\n\n" +
+    "Lalu kirim foto yang ingin diberi watermark 💛",
+    {
+      reply_markup: {
+        keyboard: [
+          ["⬅️ Kiri", "🔲 Tengah", "➡️ Kanan"],
+          ["🧩 Single Mode", "🔲 Grid Mode"],
+          ["🔳 Opacity 30%", "🔳 Opacity 50%", "🔳 Opacity 100%"],
+          ["ℹ️ Bantuan"]
+        ],
+        resize_keyboard: true
       }
+    }
+  );
+}
 
       if (!userWatermark[uid]) {
         return bot.sendMessage(chatId, "Set watermark dulu ❗");
