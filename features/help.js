@@ -1,57 +1,32 @@
 module.exports = {
   command: 'help',
-  description: 'Menampilkan informasi panduan sistem',
+  description: 'Panduan penggunaan bot',
 
   execute: async (bot, msg) => {
     const chatId = msg.chat.id;
-    const userId = msg.from.id;
 
     const helpMsg = `
-*PANDUAN OPERASIONAL SISTEM*
----------------------------------------
-*Daftar Instruksi Tersedia:*
+📌 PANDUAN BOT WATERMARK
 
-1. /start
-Menginisialisasi ulang sesi dan menjalankan protokol penyambutan sistem.
+1️⃣ Kirim foto ke bot
+2️⃣ Tunggu beberapa detik
+3️⃣ Bot akan mengirim foto yang sudah diberi watermark
 
-2. /help
-Menampilkan dokumentasi bantuan dan prosedur operasional ini.
+Command tersedia:
+/start - Mulai bot
+/help - Lihat panduan
 
-3. /ping
-Melakukan uji latensi antara server Telegram dan infrastruktur Vercel.
-
-*Prosedur Penggunaan:*
-- Kirimkan salah satu instruksi di atas melalui kolom input pesan.
-- Sistem akan memproses permintaan secara otomatis melalui Edge Network.
-- Pastikan status sesi Anda dalam keadaan aktif.
-
-*Pusat Bantuan Teknik:*
-Jika sistem tidak memberikan respon dalam 5 detik, harap periksa status konektivitas Anda atau hubungi administrator melalui jalur resmi yang tersedia.
----------------------------------------
-*LOG_ID:* \`${userId}\`
-*STATUS:* \`SYSTEM_READY\`
+Selesai ✅
     `.trim();
 
     try {
-      bot.sendChatAction(chatId, 'typing').catch(() => {});
-
       await bot.sendMessage(chatId, helpMsg, {
-        parse_mode: 'Markdown',
-        reply_to_message_id: msg.message_id,
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: 'Hubungi Administrator', url: 'https://danxyofficial.zapto.org' }
-            ]
-          ]
-        }
+        reply_to_message_id: msg.message_id
       });
 
-      console.log(`[FAST-LOG] /help executed for ID: ${userId}`);
+      console.log(`[LOG] /help executed`);
     } catch (error) {
-      console.error(`[ERROR] /help failed: ${error.message}`);
-      
-      await bot.sendMessage(chatId, "Terjadi kesalahan teknis saat memuat panduan sistem.");
+      console.error(`[ERROR] /help: ${error.message}`);
     }
   }
 };
