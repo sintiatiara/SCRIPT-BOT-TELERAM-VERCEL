@@ -1,7 +1,5 @@
-const { createCanvas, loadImage } = require('canvas');
-const fs = require('fs');
-const path = require('path');
-const fetch = require('node-fetch');
+const sharp = require("sharp");
+const axios = require("axios");
 
 const userPosition = {};
 const userMode = {};
@@ -25,21 +23,26 @@ module.exports = {
       }
     };
 
+    // START COMMAND
     bot.onText(/\/start/, async (msg) => {
       const uid = msg.from.id;
+
       userPosition[uid] = "kanan";
       userMode[uid] = "single";
       userOpacity[uid] = 0.3;
 
-      bot.sendMessage(msg.chat.id,
-        "Halo 💛\nSet watermark dulu ya.\nAtur posisi & opacity.",
+      await bot.sendMessage(
+        msg.chat.id,
+        "Halo 💛\nSet watermark dulu ya.\nAtur posisi, mode dan opacity.",
         keyboard
       );
     });
 
+    // HANDLE MENU BUTTON
     bot.on("message", async (msg) => {
       const uid = msg.from.id;
       const text = msg.text;
+
       if (!text) return;
 
       if (text === "🖼 Set Watermark") {
@@ -47,38 +50,75 @@ module.exports = {
         return bot.sendMessage(msg.chat.id, "Kirim foto watermark sekarang 🖼");
       }
 
-      if (text.includes("Kiri")) userPosition[uid] = "kiri";
-      if (text.includes("Tengah")) userPosition[uid] = "tengah";
-      if (text.includes("Kanan")) userPosition[uid] = "kanan";
+      if (text.includes("Kiri")) {
+        userPosition[uid] = "kiri";
+        return bot.sendMessage(msg.chat.id, "Posisi: kiri ✅");
+      }
 
-      if (text.includes("Single")) userMode[uid] = "single";
-      if (text.includes("Grid")) userMode[uid] = "grid";
+      if (text.includes("Tengah")) {
+        userPosition[uid] = "tengah";
+        return bot.sendMessage(msg.chat.id, "Posisi: tengah ✅");
+      }
 
-      if (text.includes("30%")) userOpacity[uid] = 0.3;
-      if (text.includes("50%")) userOpacity[uid] = 0.5;
-      if (text.includes("100%")) userOpacity[uid] = 1.0;
+      if (text.includes("Kanan")) {
+        userPosition[uid] = "kanan";
+        return bot.sendMessage(msg.chat.id, "Posisi: kanan ✅");
+      }
+
+      if (text.includes("Single")) {
+        userMode[uid] = "single";
+        return bot.sendMessage(msg.chat.id, "Mode: single ✅");
+      }
+
+      if (text.includes("Grid")) {
+        userMode[uid] = "grid";
+        return bot.sendMessage(msg.chat.id, "Mode: grid ✅");
+      }
+
+      if (text.includes("30%")) {
+        userOpacity[uid] = 0.3;
+        return bot.sendMessage(msg.chat.id, "Opacity: 30% ✅");
+      }
+
+      if (text.includes("50%")) {
+        userOpacity[uid] = 0.5;
+        return bot.sendMessage(msg.chat.id, "Opacity: 50% ✅");
+      }
+
+      if (text.includes("100%")) {
+        userOpacity[uid] = 1.0;
+        return bot.sendMessage(msg.chat.id, "Opacity: 100% ✅");
+      }
 
       if (text === "ℹ️ Bantuan") {
-        return bot.sendMessage(msg.chat.id,
-          "1️⃣ Set Watermark\n2️⃣ Pilih Mode\n3️⃣ Atur Opacity\n4️⃣ Kirim Foto"
+        return bot.sendMessage(
+          msg.chat.id,
+          "Cara pakai:\n" +
+          "1️⃣ Klik Set Watermark\n" +
+          "2️⃣ Kirim logo watermark\n" +
+          "3️⃣ Pilih Mode\n" +
+          "4️⃣ Pilih Opacity\n" +
+          "5️⃣ Kirim Foto testimoni\n"
         );
       }
     });
 
+    // HANDLE PHOTO
     bot.on("photo", async (msg) => {
       const uid = msg.from.id;
       const chatId = msg.chat.id;
 
       const photo = msg.photo[msg.photo.length - 1];
       const file = await bot.getFile(photo.file_id);
+
       const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
 
+      const response = await axios.get(fileUrl, { responseType: "arraybuffer" });
+      const inputBuffer = Buffer.from(response.data);
+
+      // MODE SIMPAN WATERMARK
       if (waitingWatermark.has(uid)) {
-        const res = await fetch(fileUrl);
-        const buffer = await res.buffer();
-        const wmPath = path.join(__dirname, `wm_${uid}.png`);
-        fs.writeFileSync(wmPath, buffer);
-        userWatermark[uid] = wmPath;
+        userWatermark[uid] = inputBuffer;
         waitingWatermark.delete(uid);
         return bot.sendMessage(chatId, "Watermark disimpan ✅");
       }
@@ -87,38 +127,76 @@ module.exports = {
         return bot.sendMessage(chatId, "Set watermark dulu ❗");
       }
 
-      const baseImg = await loadImage(fileUrl);
-      const wmImg = await loadImage(userWatermark[uid]);
+      try {
+        await bot.sendMessage(chatId, "⏳ Memproses...");
 
-      const canvas = createCanvas(baseImg.width, baseImg.height);
-      const ctx = canvas.getContext("2d");
+        const baseImage = sharp(inputBuffer);
+        const metadata = await baseImage.metadata();
 
-      ctx.drawImage(baseImg, 0, 0);
+        const wmWidth = Math.floor(metadata.width * 0.3);
 
-      const newW = baseImg.width * 0.3;
-      const ratio = newW / wmImg.width;
-      const newH = wmImg.height * ratio;
+        const wmResized = await sharp(userWatermark[uid])
+          .resize({ width: wmWidth })
+          .png()
+          .toBuffer();
 
-      ctx.globalAlpha = userOpacity[uid] || 0.3;
+        const opacity = userOpacity[uid] || 0.3;
 
-      if (userMode[uid] === "grid") {
-        for (let y = 0; y < baseImg.height; y += newH * 1.4) {
-          for (let x = 0; x < baseImg.width; x += newW * 1.4) {
-            ctx.drawImage(wmImg, x, y, newW, newH);
+        if (userMode[uid] === "grid") {
+
+          const compositeArray = [];
+          const wmMeta = await sharp(wmResized).metadata();
+
+          const spacingX = Math.floor(wmMeta.width * 1.4);
+          const spacingY = Math.floor(wmMeta.height * 1.4);
+
+          for (let y = 0; y < metadata.height; y += spacingY) {
+            for (let x = 0; x < metadata.width; x += spacingX) {
+              compositeArray.push({
+                input: wmResized,
+                top: y,
+                left: x,
+                blend: "over",
+                opacity: opacity
+              });
+            }
           }
+
+          const finalImage = await baseImage
+            .composite(compositeArray)
+            .png()
+            .toBuffer();
+
+          return bot.sendPhoto(chatId, finalImage);
+
+        } else {
+
+          const gravity =
+            userPosition[uid] === "kiri"
+              ? "west"
+              : userPosition[uid] === "tengah"
+              ? "center"
+              : "east";
+
+          const finalImage = await baseImage
+            .composite([
+              {
+                input: wmResized,
+                gravity: gravity,
+                blend: "over",
+                opacity: opacity
+              }
+            ])
+            .png()
+            .toBuffer();
+
+          return bot.sendPhoto(chatId, finalImage);
         }
-      } else {
-        let x = baseImg.width - newW - 20;
-        let y = (baseImg.height - newH) / 2;
 
-        if (userPosition[uid] === "kiri") x = 20;
-        if (userPosition[uid] === "tengah") x = (baseImg.width - newW) / 2;
-
-        ctx.drawImage(wmImg, x, y, newW, newH);
+      } catch (error) {
+        console.error(error);
+        return bot.sendMessage(chatId, "Terjadi kesalahan saat memproses gambar ❌");
       }
-
-      const buffer = canvas.toBuffer("image/png");
-      await bot.sendPhoto(chatId, buffer);
     });
 
   }
