@@ -17,9 +17,11 @@ files.forEach(file => {
 });
 
 function register(bot) {
-  console.log('🔧 Registering commands...');
-  
+  console.log('🔧 Registering features...');
+
   Object.entries(features).forEach(([name, feature]) => {
+
+    // 🔹 Register command
     if (feature.command) {
       const pattern = new RegExp(`^\\/${feature.command}(?:@\\w+)?$`);
       
@@ -27,28 +29,19 @@ function register(bot) {
         console.log(`Command /${feature.command} from ${msg.from.id}`);
         feature.execute(bot, msg);
       });
-      
-      console.log(`   ↳ /${feature.command} - ${feature.description}`);
+
+      console.log(`   ↳ Command: /${feature.command}`);
     }
-  });
-  
-  bot.on('message', (msg) => {
-    if (msg.text && msg.text.startsWith('/')) {
-      const cmd = msg.text.split(' ')[0].replace('/', '');
-      const knownCommands = Object.values(features)
-        .map(f => f.command)
-        .filter(c => c);
-      
-      if (!knownCommands.includes(cmd)) {
-        bot.sendMessage(
-          msg.chat.id,
-          `Unknown command: /${cmd}\n\nUse /help for available commands.`
-        );
-        console.log(`Unknown command: /${cmd}`);
-      }
+
+    // 🔹 Register custom handler (INI YANG PENTING)
+    if (typeof feature.register === 'function') {
+      feature.register(bot);
+      console.log(`   ↳ Custom handler registered: ${name}`);
     }
+
   });
-  console.log(`Total commands: ${Object.keys(features).length}`);
+
+  console.log(`Total features: ${Object.keys(features).length}`);
 }
 
 module.exports = {
