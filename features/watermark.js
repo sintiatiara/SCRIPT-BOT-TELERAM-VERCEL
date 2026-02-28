@@ -23,7 +23,7 @@ module.exports = {
       }
     };
 
-    // START COMMAND
+    // START
     bot.onText(/\/start/, async (msg) => {
       const uid = msg.from.id;
 
@@ -38,11 +38,10 @@ module.exports = {
       );
     });
 
-    // HANDLE MENU BUTTON
+    // MENU BUTTON
     bot.on("message", async (msg) => {
       const uid = msg.from.id;
       const text = msg.text;
-
       if (!text) return;
 
       if (text === "🖼 Set Watermark") {
@@ -108,46 +107,36 @@ module.exports = {
       const uid = msg.from.id;
       const chatId = msg.chat.id;
 
-      const photo = msg.photo[msg.photo.length - 1];
-      const file = await bot.getFile(photo.file_id);
-
-      const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
-
-      const response = await axios.get(fileUrl, { responseType: "arraybuffer" });
-      const inputBuffer = Buffer.from(response.data);
-
-      // MODE SIMPAN WATERMARK
-      if (waitingWatermark.has(uid)) {
-  userWatermark[uid] = inputBuffer;
-  waitingWatermark.delete(uid);
-
-  return bot.sendMessage(
-    chatId,
-    "✅ Watermark berhasil disimpan!\n\n" +
-    "Sekarang pilih pengaturan:\n" +
-    "📍 Posisi\n" +
-    "🧩 Mode (Single / Grid)\n" +
-    "🔳 Opacity\n\n" +
-    "Lalu kirim foto yang ingin diberi watermark 💛",
-    {
-      reply_markup: {
-        keyboard: [
-          ["⬅️ Kiri", "🔲 Tengah", "➡️ Kanan"],
-          ["🧩 Single Mode", "🔲 Grid Mode"],
-          ["🔳 Opacity 30%", "🔳 Opacity 50%", "🔳 Opacity 100%"],
-          ["ℹ️ Bantuan"]
-        ],
-        resize_keyboard: true
-      }
-    }
-  );
-}
-
-      if (!userWatermark[uid]) {
-        return bot.sendMessage(chatId, "Set watermark dulu ❗");
-      }
-
       try {
+
+        const photo = msg.photo[msg.photo.length - 1];
+        const file = await bot.getFile(photo.file_id);
+
+        const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
+
+        const response = await axios.get(fileUrl, {
+          responseType: "arraybuffer"
+        });
+
+        const inputBuffer = Buffer.from(response.data);
+
+        // SIMPAN WATERMARK
+        if (waitingWatermark.has(uid)) {
+          userWatermark[uid] = inputBuffer;
+          waitingWatermark.delete(uid);
+
+          return bot.sendMessage(
+            chatId,
+            "✅ Watermark berhasil disimpan!\n\n" +
+            "Sekarang pilih pengaturan lalu kirim foto 💛",
+            keyboard
+          );
+        }
+
+        if (!userWatermark[uid]) {
+          return bot.sendMessage(chatId, "Set watermark dulu ❗");
+        }
+
         await bot.sendMessage(chatId, "⏳ Memproses...");
 
         const baseImage = sharp(inputBuffer);
@@ -162,6 +151,7 @@ module.exports = {
 
         const opacity = userOpacity[uid] || 0.3;
 
+        // ================= GRID MODE =================
         if (userMode[uid] === "grid") {
 
           const compositeArray = [];
@@ -187,34 +177,49 @@ module.exports = {
             .png()
             .toBuffer();
 
-          return bot.sendPhoto(chatId, finalImage);
+          if (!finalImage) {
+            return bot.sendMessage(chatId, "Gagal generate gambar ❌");
+          }
 
-        } else {
+          return bot.sendPhoto(chatId, {
+            source: finalImage,
+            filename: "watermark.png"
+          });
 
-          const gravity =
-            userPosition[uid] === "kiri"
-              ? "west"
-              : userPosition[uid] === "tengah"
-              ? "center"
-              : "east";
-
-          const finalImage = await baseImage
-            .composite([
-              {
-                input: wmResized,
-                gravity: gravity,
-                blend: "over",
-                opacity: opacity
-              }
-            ])
-            .png()
-            .toBuffer();
-
-          return bot.sendPhoto(chatId, finalImage);
         }
 
+        // ================= SINGLE MODE =================
+
+        const gravity =
+          userPosition[uid] === "kiri"
+            ? "west"
+            : userPosition[uid] === "tengah"
+            ? "center"
+            : "east";
+
+        const finalImage = await baseImage
+          .composite([
+            {
+              input: wmResized,
+              gravity: gravity,
+              blend: "over",
+              opacity: opacity
+            }
+          ])
+          .png()
+          .toBuffer();
+
+        if (!finalImage) {
+          return bot.sendMessage(chatId, "Gagal generate gambar ❌");
+        }
+
+        return bot.sendPhoto(chatId, {
+          source: finalImage,
+          filename: "watermark.png"
+        });
+
       } catch (error) {
-        console.error(error);
+        console.error("ERROR WATERMARK:", error);
         return bot.sendMessage(chatId, "Terjadi kesalahan saat memproses gambar ❌");
       }
     });
