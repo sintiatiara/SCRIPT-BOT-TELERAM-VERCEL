@@ -29,7 +29,7 @@ app.post('/api/bot', async (req, res) => {
 
 app.get('/set-webhook', async (req, res) => {
   try {
-    const vercelUrl = 'https://script-bot-teleram-vercel-bay.vercel.app';
+    const vercelUrl = 'https://script-bot-teleram-vercel-eu61.vercel.app';
     const webhookUrl = `${vercelUrl}/api/bot`;
     
     await bot.deleteWebHook();
